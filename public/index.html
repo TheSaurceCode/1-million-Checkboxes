@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>1 million check boxes</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 48px 24px;
+        background:
+          radial-gradient(
+            ellipse at top,
+            rgba(49, 91, 170, 0.22),
+            transparent 55%
+          ),
+          #0b1020;
+        color: #f4f7ff;
+        font-family:
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      h1 {
+        margin: 0 0 32px;
+        color: #f4f7ff;
+        font-size: clamp(2rem, 5vw, 3.25rem);
+        font-weight: 750;
+        letter-spacing: -0.045em;
+        text-align: center;
+      }
+
+      #container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+        gap: 12px;
+        width: min(100%, 840px);
+        margin: 0 auto;
+        padding: 28px;
+        border: 1px solid rgba(164, 185, 230, 0.15);
+        border-radius: 20px;
+        background: rgba(18, 27, 49, 0.82);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+      }
+
+      #container input[type="checkbox"] {
+        width: 22px;
+        height: 22px;
+        margin: 0 auto;
+        accent-color: #65e6c2;
+        cursor: pointer;
+        transition:
+          transform 160ms ease,
+          filter 160ms ease;
+      }
+
+      #container input[type="checkbox"]:hover {
+        filter: brightness(1.2);
+        transform: scale(1.15);
+      }
+
+      #container input[type="checkbox"]:focus-visible {
+        outline: 3px solid #a3f7e1;
+        outline-offset: 4px;
+        border-radius: 4px;
+      }
+
+      @media (max-width: 520px) {
+        body {
+          padding: 32px 16px;
+        }
+
+        #container {
+          gap: 10px;
+          padding: 20px 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Checkboxes</h1>
+    <div id="container"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const container = document.getElementById("container");
+      const CHECK_BOXES = 1 * 200;
+
+      socket.on("server:checkbox:click", (data) => {
+        console.log("data from server side :- ", data);
+
+        const { index, checked } = data;
+
+        const input = document.getElementById(`checkbox-${index}`);
+        if (input) {
+          input.checked = checked;
+        }
+      });
+
+      window.addEventListener("load", async () => {
+        const response = await fetch("/checkboxes", { method: "GET" });
+        const data = await response.json();
+
+        if (data && data.checkboxes) {
+          data.checkboxes.forEach((serverValue, index) => {
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.id = `checkbox-${index}`;
+            input.checked = serverValue;
+
+            input.addEventListener("change", (event) => {
+              const checked = event.target.checked;
+              console.log("Checked chnaged ", { index, checked });
+              socket.emit("user:checkbox:click", { index, checked });
+            });
+            container.appendChild(input);
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
